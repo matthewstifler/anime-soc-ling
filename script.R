@@ -1,4 +1,7 @@
 library(devtools)
+library(stringr)
+library(dplyr)
+library(tm)
 source_gist("https://gist.github.com/paulokopny/63daf8ca42f9d842b122")
 vk <- get.vk.connector(code = "code", app = "karepin")
 
@@ -78,3 +81,20 @@ for (j in 1:length(topics.df$tid)){
     str_c(as.character(nrow(comm.df)), " ") %>% str_c(as.POSIXct(Sys.time(), origin = "1970-01-01")) %>% str_c("\n") %>% cat()
   }
 }
+
+#working on text starts here
+
+comm.df$text = gsub("[^А-Яа-я]", " ", comm.df$text)
+corp <- Corpus(VectorSource(comm.df$text), readerControl=list(language="ru", encoding="UTF-8"))
+corp <- tm_map(corp, content_transformer(tolower))
+corp <- tm_map(corp, removeWords, stopwords("ru"))
+corp <- tm_map(corp, stripWhitespace)
+
+#stemming was baaad
+dtm.control <- list(weighting=weightTf, stemming=FALSE, bounds=list(global=c(10,1000)))
+dtm<-DocumentTermMatrix(corp, control=dtm.control)
+
+
+findFreqTerms(dtm, 100)
+term.freq <- colSums(as.matrix(dtm))
+term.freq <- subset(term.freq, term.freq >=100)
