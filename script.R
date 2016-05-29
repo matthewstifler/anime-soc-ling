@@ -1,6 +1,6 @@
 library(devtools)
 source_gist("https://gist.github.com/paulokopny/63daf8ca42f9d842b122")
-vk <- get.vk.connector(code = "e8b702812fd6d8b974", app = "karepin")
+vk <- get.vk.connector(code = "code", app = "karepin")
 
 board.getTopics <- function(vk.get_data, group_id, offset=0, count=20) {
   method="board.getTopics"
@@ -57,3 +57,24 @@ for (j in 1:(number %/% 100 + 1)){
   }
 }
 
+#extracting discussions
+i = 0
+j = 0
+k = 0
+comm = c()
+comm.df = data.frame()
+
+#nested loops duh
+for (j in 1:length(topics.df$tid)){
+  tid = topics.df$tid[j]
+  number = board.getComments(vk, id, tid, count = 1)[[1]]
+  for (i in 1:(number %/% 100 + 1)){
+    offset = (i-1)*100
+    count = ifelse(number - offset > 100, 100, number - offset)
+    comms = board.getComments(vk, id, tid, offset = offset, count = count)
+    for (k in 2:length(comms)){
+      comm.df = rbind(comm.df, comms[[k]][1:4] %>% as.data.frame())
+    }
+    str_c(as.character(nrow(comm.df)), " ") %>% str_c(as.POSIXct(Sys.time(), origin = "1970-01-01")) %>% str_c("\n") %>% cat()
+  }
+}
