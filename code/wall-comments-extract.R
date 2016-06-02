@@ -81,7 +81,7 @@ for (j in 1:length(posts.df$id)){
       offset = (i-1)*100
       count = ifelse(comm.number - offset > 100, 100, comm.number - offset)
       comms = wall.getComments(vk, owner_id = owner_id, post_id = post_id, offset = offset, count = count)
-      if (length(comms) > 0){
+      if (length(comms) > 1){
         for (k in 2:length(comms)){
           comm.df = rbind(comm.df, comms[[k]][1:5] %>% as.data.frame())
         }
