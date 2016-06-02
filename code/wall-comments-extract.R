@@ -2,7 +2,7 @@ library(devtools)
 library(stringr)
 library(dplyr)
 source_gist("https://gist.github.com/paulokopny/63daf8ca42f9d842b122")
-vk <- get.vk.connector(code = "code", app = "karepin")
+vk <- get.vk.connector(code = "", app = "karepin")
 
 wall.get <- function(vk.get_data, domain=NULL, owner_id=NULL, offset=0, count=20) {
   print("Waiting...")
@@ -66,18 +66,18 @@ for (j in 1:(posts.number %/% 100 + 1)){ #calculate n of iterations, whole numbe
 
 #downloading comments
 
-i = 0
-j = 0
-k = 0
+i = 1 #indices are set here so that if loop fails it can pickup from where it stopped
+j = 1
+k = 2
 comms = c()
 comm.number = c()
 comm.df = data.frame()
 
-for (j in 1:length(posts.df$id)){
+for (j in j:length(posts.df$id)){
   post_id = posts.df$id[j]
   comm.number = posts.df$count[j]
   if (comm.number > 0) {
-    for (i in 1:(comm.number %/% 100 + 1)){
+    for (i in i:(comm.number %/% 100 + 1)){
       offset = (i-1)*100
       count = ifelse(comm.number - offset > 100, 100, comm.number - offset)
       comms = wall.getComments(vk, owner_id = owner_id, post_id = post_id, offset = offset, count = count)
