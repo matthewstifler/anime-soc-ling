@@ -39,6 +39,8 @@ wall.getComments <- function(vk.get_data, owner_id=NULL, post_id = NULL, offset=
   }
 }
 
+detach("package:tm", unload=TRUE) #bc conflicts
+detach("package:NLP", unload = TRUE)
 
 #get number of posts and their ids
 
@@ -58,6 +60,7 @@ for (j in 1:(posts.number %/% 100 + 1)){ #calculate n of iterations, whole numbe
     tmp = posts[[i]] %>% as.data.frame()
     posts.df = rbind(posts.df, tmp[,c(1, ncol(tmp) - 2)]) #1st - id, 2nd - n of comms, so that we know how many we gotta download
   }
+  str_c(as.character(nrow(posts.df)), "/") %>% str_c(as.character(posts.number)) %>% str_c(" ") %>% str_c(as.POSIXct(Sys.time(), origin = "1970-01-01")) %>% str_c("\n") %>% cat()
   rm(tmp)
 }
 
