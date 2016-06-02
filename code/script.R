@@ -2,6 +2,9 @@ library(devtools)
 library(stringr)
 library(dplyr)
 library(tm)
+library(wordcloud)
+library(mallet)
+
 source_gist("https://gist.github.com/paulokopny/63daf8ca42f9d842b122")
 vk <- get.vk.connector(code = "code", app = "karepin")
 
@@ -87,14 +90,58 @@ for (j in 1:length(topics.df$tid)){
 comm.df$text = gsub("[^А-Яа-я]", " ", comm.df$text)
 corp <- Corpus(VectorSource(comm.df$text), readerControl=list(language="ru", encoding="UTF-8"))
 corp <- tm_map(corp, content_transformer(tolower))
-corp <- tm_map(corp, removeWords, stopwords("ru"))
+corp <- tm_map(corp, removeWords, c(stopwords("ru"), "очень", "просто", "вообще", "хотя", "вроде"))
 corp <- tm_map(corp, stripWhitespace)
 
 #stemming was baaad
 dtm.control <- list(weighting=weightTf, stemming=FALSE, bounds=list(global=c(10,1000)))
 dtm<-DocumentTermMatrix(corp, control=dtm.control)
 
-
 findFreqTerms(dtm, 100)
 term.freq <- colSums(as.matrix(dtm))
-term.freq <- subset(term.freq, term.freq >=100)
+term.freq.sub <- subset(term.freq, term.freq >=200)
+plot.df <- data.frame(term = names(term.freq.sub), freq = term.freq.sub)
+
+#plotting top with reorder (!)
+g = ggplot(plot.df[order(-plot.df$freq),], aes(x = reorder(term, freq), y = freq)) + geom_bar(stat = "identity") + xlab("Terms") + ylab("Count") +coord_flip() + theme(axis.text=element_text(size=12), axis.title=element_text(size=18))
+ggsave(g, filename = "~/anime-soc-ling/plot.png", width = 16, height = 7.61, units = "in", dpi = 75)
+
+m <- as.matrix(dtm)
+# calculate the frequency of words and sort it by frequency
+word.freq <- sort(colSums(m), decreasing = T)
+
+#now this is how to save wordcloud so that they look neat! incredible!
+#png("~/anime-soc-ling/wordcloud.png")
+wordcloud(words = names(word.freq), freq = word.freq, scale = c(5,0.1),min.freq = 3, max.words = 200, random.order = F, colors = pal)
+#dev.off()
+#cool, amirite
+
+#lda, sigh
+mallet.instances <- mallet.import(as.character(comm.df$id), as.character(comm.df$text), "~/anime-soc-ling/stoplist", token.regexp = "[\\p{L}\\p{N}-]*\\p{L}+")
+topic.model <- MalletLDA(num.topics=10) # количество тем
+topic.model$loadDocuments(mallet.instances) 
+topic.model$setAlphaOptimization(20, 50)
+
+vocabulary <- topic.model$getVocabulary() # словарь корпуса
+word.freqs <- mallet.word.freqs(topic.model) # таблица частотности слов
+## вершина частотного списка (по документной частоте)
+head(word.freqs[order(word.freqs$doc.freq, decreasing=T),],30)
+
+## параметр — количество итераций
+topic.model$train(2000)
+
+## выбор наилучшей темы для каждого токена
+topic.model$maximize(10)
+
+## таблица распределения тем по документам
+doc.topics <- mallet.doc.topics(topic.model, smoothed=TRUE, normalized=TRUE)
+## таблица распределения слов по темам
+topic.words <- mallet.topic.words(topic.model, smoothed=TRUE, normalized=TRUE)
+## метки для тем (по трем главным словам)
+topic.labels <- mallet.topic.labels(topic.model, topic.words, 3)
+
+for (k in 1:nrow(topic.words)) {
+  top <- paste(mallet.top.words(topic.model, topic.words[k,], 10)$words,collapse=" ")
+  cat(paste(k, top, "\n"))
+}
+
