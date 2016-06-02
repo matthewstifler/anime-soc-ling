@@ -112,6 +112,7 @@ word.freq <- sort(colSums(m), decreasing = T)
 
 #now this is how to save wordcloud so that they look neat! incredible!
 #png("~/anime-soc-ling/wordcloud.png")
+pal <- brewer.pal(9,"YlGnBu")
 wordcloud(words = names(word.freq), freq = word.freq, scale = c(5,0.1),min.freq = 3, max.words = 200, random.order = F, colors = pal)
 #dev.off()
 #cool, amirite
