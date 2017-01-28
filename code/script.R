@@ -129,7 +129,7 @@ word.freqs <- mallet.word.freqs(topic.model) # таблица частотнос
 head(word.freqs[order(word.freqs$doc.freq, decreasing=T),],30)
 
 ## параметр — количество итераций
-topic.model$train(2000)
+topic.model$train(5000)
 
 ## выбор наилучшей темы для каждого токена
 topic.model$maximize(10)
